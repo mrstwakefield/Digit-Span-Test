@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Digit span test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF0EA; --surface:#F8F9F5; --ink:#1D2622; --muted:#5B6660; --line:#CBD1C7;
+  --accent:#2F55D4; --accent-ink:#FFFFFF; --ok:#2B7A4B; --miss:#B4432C;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#151A18; --surface:#1C2320; --ink:#E6EAE4; --muted:#9AA59E; --line:#2F3833;
+    --accent:#8AA4FF; --accent-ink:#0F1530; --ok:#6CC892; --miss:#F08B73; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#151A18; --surface:#1C2320; --ink:#E6EAE4; --muted:#9AA59E; --line:#2F3833;
+  --accent:#8AA4FF; --accent-ink:#0F1530; --ok:#6CC892; --miss:#F08B73; color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size:1.0625rem; line-height:1.5; font-variant-numeric:tabular-nums;
+}
+main{max-width:40rem; margin:0 auto; padding:2.5rem 1.25rem 4rem}
+h1{font-size:clamp(2.4rem,7vw,3.4rem); line-height:1; font-weight:750; letter-spacing:-0.03em; margin:0 0 .75rem; font-variation-settings:"opsz" 96}
+h2{font-size:1.35rem; font-weight:650; letter-spacing:-0.01em; margin:0 0 .75rem}
+p{margin:0 0 1rem}
+.lede{color:var(--muted); max-width:34rem}
+button{font:inherit; color:inherit; cursor:pointer}
+button:focus-visible, input:focus-visible + span{outline:3px solid var(--accent); outline-offset:2px}
+.primary{
+  background:var(--accent); color:var(--accent-ink); border:0; border-radius:.6rem;
+  padding:.85rem 1.4rem; font-weight:650; font-size:1.05rem;
+}
+.primary:disabled{opacity:.4; cursor:not-allowed}
+.quiet{background:none; border:0; color:var(--muted); text-decoration:underline; text-underline-offset:3px; padding:.4rem 0}
+
+/* setup */
+fieldset{border:0; padding:0; margin:0 0 1.4rem}
+legend{font-weight:600; margin-bottom:.5rem; padding:0}
+.choices{display:flex; flex-wrap:wrap; gap:.5rem}
+.choices label{position:relative}
+.choices input{position:absolute; opacity:0; inset:0; margin:0; cursor:pointer}
+.choices span{
+  display:inline-block; padding:.5rem .95rem; border:1.5px solid var(--line); border-radius:999px;
+  background:var(--surface); transition:background .15s, border-color .15s;
+}
+.choices input:checked + span{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+.choices input:disabled + span{opacity:.4}
+.hint{color:var(--muted); font-size:.95rem; margin-top:.4rem}
+
+/* stage */
+#stage{min-height:70vh; display:flex; flex-direction:column}
+.status{display:flex; justify-content:space-between; gap:1rem; color:var(--muted); font-size:.95rem; align-items:baseline}
+.screen{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:1rem 0}
+.digit{
+  font-size:clamp(9rem,42vw,19rem); font-weight:300; line-height:1; letter-spacing:-0.04em;
+  height:1em; display:flex; align-items:center; justify-content:center;
+  font-variation-settings:"opsz" 96;
+}
+.digit.small{font-size:clamp(1.6rem,6vw,2.2rem); font-weight:500; letter-spacing:-0.01em; height:auto; min-height:3em}
+.listen{width:3.2rem; height:3.2rem; border-radius:50%; background:var(--accent); animation:pulse .5s ease-out}
+@keyframes pulse{from{transform:scale(.6); opacity:.4} to{transform:scale(1); opacity:1}}
+.ticks{display:flex; gap:.45rem; justify-content:center; margin:1.5rem 0 0; flex-wrap:wrap}
+.ticks i{width:.8rem; height:.8rem; border-radius:2px; border:1.5px solid var(--line)}
+.ticks i.on{background:var(--ink); border-color:var(--ink)}
+
+.intro{max-width:28rem}
+.intro h2{font-size:2rem; letter-spacing:-0.02em}
+
+.slots{display:flex; gap:.4rem; justify-content:center; flex-wrap:wrap; margin:.25rem 0 1.5rem}
+.slots b{
+  width:2.6rem; height:3.3rem; border-bottom:2.5px solid var(--line);
+  display:flex; align-items:center; justify-content:center; font-size:2rem; font-weight:500;
+}
+.slots b.filled{border-color:var(--ink)}
+.slots b.next{border-color:var(--accent)}
+.keypad{display:grid; grid-template-columns:repeat(3, minmax(4.2rem, 5.5rem)); gap:.55rem; justify-content:center}
+.keypad button{
+  height:3.6rem; border-radius:.6rem; border:1.5px solid var(--line); background:var(--surface);
+  font-size:1.5rem; font-weight:500;
+}
+.keypad button:active{transform:translateY(1px)}
+.keypad .fn{font-size:1rem; font-weight:600}
+.keypad .done{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+.keypad .done:disabled{opacity:.4; cursor:not-allowed}
+.feedback{font-size:1.6rem; font-weight:650}
+.feedback.ok{color:var(--ok)} .feedback.miss{color:var(--miss)}
+.feedback small{display:block; color:var(--muted); font-weight:400; font-size:1.05rem; margin-top:.4rem}
+
+/* results */
+.scores{display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin:1.25rem 0 1.5rem}
+.score{border-top:2.5px solid var(--ink); padding-top:.6rem}
+.score .n{font-size:clamp(4rem,16vw,6.5rem); font-weight:300; line-height:1; letter-spacing:-0.04em}
+.score .l{color:var(--muted)}
+.tablewrap{overflow-x:auto; margin:0 0 1.5rem}
+table{border-collapse:collapse; width:100%; font-size:.95rem}
+th,td{text-align:left; padding:.45rem .6rem .45rem 0; border-bottom:1px solid var(--line); white-space:nowrap}
+th{font-weight:600; color:var(--muted)}
+td.r, th.r{text-align:right}
+.mark-ok{color:var(--ok); font-weight:600} .mark-miss{color:var(--miss); font-weight:600}
+.actions{display:flex; gap:1rem; align-items:center; flex-wrap:wrap}
+
+section.block{margin-top:3.5rem}
+.who{display:flex; align-items:center; gap:.55rem}
+.who img{width:1.6rem; height:1.6rem; border-radius:50%}
+.you{color:var(--muted); font-size:.85rem}
+.empty{color:var(--muted)}
+[hidden]{display:none !important}
+@media (prefers-reduced-motion: reduce){ .listen{animation:none} .choices span{transition:none} }
+</style>
+</head>
+<body>
+<main>
+
+  <section id="setup">
+    <h1>Digit span</h1>
+    <p class="lede">Digits appear one at a time. When they stop, type them back. Each length gets two tries; the test moves up a digit as long as you get at least one right, and ends when you miss both.</p>
+
+    <fieldset>
+      <legend>Which tests</legend>
+      <div class="choices">
+        <label><input type="radio" name="order" value="both" checked><span>Forward, then backward</span></label>
+        <label><input type="radio" name="order" value="forward"><span>Forward only</span></label>
+        <label><input type="radio" name="order" value="backward"><span>Backward only</span></label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>How digits are given</legend>
+      <div class="choices">
+        <label><input type="radio" name="present" value="show" checked><span>Show</span></label>
+        <label><input type="radio" name="present" value="speak"><span>Speak</span></label>
+        <label><input type="radio" name="present" value="both"><span>Show and speak</span></label>
+      </div>
+      <p class="hint" id="speechHint">Spoken digits use your device's voice. The clinical version is spoken.</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Pace</legend>
+      <div class="choices">
+        <label><input type="radio" name="pace" value="1000" checked><span>1 digit per second</span></label>
+        <label><input type="radio" name="pace" value="1500"><span>1 every 1.5 seconds</span></label>
+      </div>
+    </fieldset>
+
+    <button class="primary" id="startBtn">Start test</button>
+  </section>
+
+  <section id="stage" hidden>
+    <div class="status"><span id="statusText"></span><button class="quiet" id="quitBtn">Stop test</button></div>
+    <div class="screen" id="screen"></div>
+  </section>
+
+  <section id="results" hidden>
+    <h1>Your span</h1>
+    <div class="scores" id="scoreCards"></div>
+    <p class="lede">Most adults land around 6 to 7 forward and 4 to 5 backward. Tiredness, distraction and pace all move it by a digit or two, so compare runs taken under similar conditions.</p>
+    <h2>Every trial</h2>
+    <div class="tablewrap"><table id="logTable"></table></div>
+    <div class="actions">
+      <button class="primary" id="againBtn">Test again</button>
+      <span class="hint" id="saveNote"></span>
+    </div>
+  </section>
+
+  <section class="block" id="boardBlock" hidden>
+    <h2>Leaderboard</h2>
+    <p class="hint" id="boardNote">Everyone's best forward and backward spans. Yours updates when you finish a test.</p>
+    <div class="tablewrap"><table id="boardTable"></table></div>
+  </section>
+
+  <section class="block" id="historyBlock" hidden>
+    <h2>Your recent tests on this device</h2>
+    <div class="tablewrap"><table id="historyTable"></table></div>
+  </section>
+
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const START = { forward: 3, backward: 2 };
+  const MAX = 12;
+  const NAMES = { forward: "Forward", backward: "Backward" };
+  const canSpeak = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+
+  if (!canSpeak) {
+    document.querySelectorAll('input[name="present"]').forEach(i => { if (i.value !== "show") i.disabled = true; });
+    $("speechHint").textContent = "This browser can't speak digits, so they'll be shown.";
+  }
+
+  let run = null;
+  let cfg = null;
+
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const alive = token => run && run.token === token;
+
+  function show(id) {
+    ["setup", "stage", "results"].forEach(s => $(s).hidden = s !== id);
+    window.scrollTo(0, 0);
+  }
+
+  function makeSeq(n) {
+    const out = [];
+    while (out.length < n) {
+      const d = 1 + Math.floor(Math.random() * 9);
+      if (n <= 9 ? out.includes(d) : out[out.length - 1] === d) continue;
+      out.push(d);
+    }
+    return out;
+  }
+
+  function speak(d) {
+    if (!canSpeak) return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(String(d));
+      u.rate = 1.05;
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+
+  function readCfg() {
+    const val = n => document.querySelector(`input[name="${n}"]:checked`).value;
+    return { order: val("order"), present: val("present"), pace: Number(val("pace")) };
+  }
+
+  function setStatus() {
+    $("statusText").textContent = `${NAMES[run.mode]}, ${run.len} digits, try ${run.trial} of 2`;
+  }
+
+  // ---- run flow ----
+  $("startBtn").addEventListener("click", () => {
+    cfg = readCfg();
+    if (canSpeak && cfg.present !== "show") { try { speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); } catch (e) {} }
+    run = {
+      token: {},
+      modes: cfg.order === "both" ? ["forward", "backward"] : [cfg.order],
+      mi: 0, spans: {}, log: []
+    };
+    show("stage");
+    beginMode();
+  });
+
+  $("quitBtn").addEventListener("click", () => {
+    run = null;
+    if (canSpeak) speechSynthesis.cancel();
+    show("setup");
+  });
+
+  $("againBtn").addEventListener("click", () => show("setup"));
+
+  function beginMode() {
+    run.mode = run.modes[run.mi];
+    run.len = START[run.mode];
+    run.trial = 1;
+    run.passed = false;
+    run.spans[run.mode] = 0;
+    $("statusText").textContent = run.modes.length > 1 ? `Part ${run.mi + 1} of ${run.modes.length}` : "";
+    const backward = run.mode === "backward";
+    $("screen").innerHTML = `
+      <div class="intro">
+        <h2>${NAMES[run.mode]}</h2>
+        <p>${backward
+          ? "Type the digits in <strong>reverse</strong> order. If you get 3 8 2, type 2 8 3."
+          : "Type the digits in the same order you got them. If you get 3 8 2, type 3 8 2."}</p>
+        <p class="hint">Starts at ${run.len} digits.</p>
+        <button class="primary" id="beginBtn">Begin</button>
+      </div>`;
+    const b = $("beginBtn");
+    b.focus();
+    b.addEventListener("click", () => {
+      if (canSpeak && cfg.present !== "show") { try { speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); } catch (e) {} }
+      nextTrial();
+    });
+  }
+
+  async function nextTrial() {
+    const token = run.token;
+    run.seq = makeSeq(run.len);
+    run.input = [];
+    setStatus();
+    $("screen").innerHTML = `<div class="digit small" id="digit">Get ready</div><div class="ticks" id="ticks">${"<i></i>".repeat(run.len)}</div>`;
+    const digit = $("digit"), ticks = $("ticks").children;
+    await sleep(1100);
+    if (!alive(token)) return;
+    digit.classList.remove("small");
+    digit.textContent = "";
+    await sleep(300);
+
+    const on = cfg.pace * 0.75, off = cfg.pace * 0.25;
+    for (let i = 0; i < run.seq.length; i++) {
+      if (!alive(token)) return;
+      const d = run.seq[i];
+      if (cfg.present === "speak") digit.innerHTML = '<span class="listen" aria-hidden="true"></span>';
+      else digit.textContent = d;
+      if (cfg.present !== "show") speak(d);
+      ticks[i].classList.add("on");
+      await sleep(on);
+      if (!alive(token)) return;
+      digit.textContent = "";
+      await sleep(off);
+    }
+    if (!alive(token)) return;
+    await sleep(250);
+    if (!alive(token)) return;
+    askAnswer();
+  }
+
+  function askAnswer() {
+    run.answering = true;
+    const backward = run.mode === "backward";
+    $("screen").innerHTML = `
+      <p>${backward ? "Type them in reverse order" : "Type them in order"}</p>
+      <div class="slots" id="slots" aria-live="polite"></div>
+      <div class="keypad" id="keypad">
+        ${[1,2,3,4,5,6,7,8,9].map(n => `<button data-d="${n}">${n}</button>`).join("")}
+        <button class="fn" data-act="del">Delete</button>
+        <button data-d="0">0</button>
+        <button class="fn done" data-act="done" id="doneBtn" disabled>Done</button>
+      </div>`;
+    $("keypad").addEventListener("click", e => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      if (b.dataset.d !== undefined) press(Number(b.dataset.d));
+      else if (b.dataset.act === "del") del();
+      else if (b.dataset.act === "done") submit();
+    });
+    renderSlots();
+  }
+
+  function renderSlots() {
+    const n = run.seq.length;
+    let html = "";
+    for (let i = 0; i < n; i++) {
+      const v = run.input[i];
+      const cls = v !== undefined ? "filled" : (i === run.input.length ? "next" : "");
+      html += `<b class="${cls}">${v !== undefined ? v : ""}</b>`;
+    }
+    $("slots").innerHTML = html;
+    $("doneBtn").disabled = run.input.length === 0;
+  }
+
+  function press(d) {
+    if (!run || !run.answering || run.input.length >= run.seq.length) return;
+    run.input.push(d);
+    renderSlots();
+  }
+  function del() {
+    if (!run || !run.answering) return;
+    run.input.pop();
+    renderSlots();
+  }
+
+  document.addEventListener("keydown", e => {
+    if (!run || !run.answering) return;
+    if (/^[0-9]$/.test(e.key)) { press(Number(e.key)); e.preventDefault(); }
+    else if (e.key === "Backspace") { del(); e.preventDefault(); }
+    else if (e.key === "Enter" && run.input.length) { submit(); e.preventDefault(); }
+  });
+
+  async function submit() {
+    if (!run || !run.answering) return;
+    run.answering = false;
+    const token = run.token;
+    const target = run.mode === "backward" ? [...run.seq].reverse() : run.seq;
+    const correct = run.input.join("") === target.join("");
+    run.log.push({ mode: run.mode, len: run.len, seq: run.seq.join(""), answer: run.input.join(""), correct });
+    if (correct) { run.passed = true; run.spans[run.mode] = Math.max(run.spans[run.mode], run.len); }
+
+    $("screen").innerHTML = correct
+      ? `<div class="feedback ok">Correct</div>`
+      : `<div class="feedback miss">Not quite<small>The answer was ${target.join(" ")}</small></div>`;
+    await sleep(correct ? 900 : 1800);
+    if (!alive(token)) return;
+
+    if (run.trial === 1) { run.trial = 2; return nextTrial(); }
+    if (run.passed && run.len < MAX) {
+      run.len++; run.trial = 1; run.passed = false;
+      return nextTrial();
+    }
+    run.mi++;
+    if (run.mi < run.modes.length) beginMode();
+    else finish();
+  }
+
+  // ---- results ----
+  function finish() {
+    const r = run;
+    run = null;
+    const card = m => `<div class="score"><div class="n">${r.spans[m] !== undefined ? r.spans[m] : "–"}</div><div class="l">${NAMES[m]} span</div></div>`;
+    $("scoreCards").innerHTML = card("forward") + card("backward");
+    const rows = r.log.map(t => `<tr><td>${NAMES[t.mode]}</td><td class="r">${t.len}</td><td>${t.seq.split("").join(" ")}</td><td>${t.answer.split("").join(" ")}</td><td class="${t.correct ? "mark-ok" : "mark-miss"}">${t.correct ? "Right" : "Missed"}</td></tr>`).join("");
+    $("logTable").innerHTML = `<thead><tr><th>Test</th><th class="r">Digits</th><th>Given</th><th>You typed</th><th>Result</th></tr></thead><tbody>${rows}</tbody>`;
+    $("saveNote").textContent = "";
+    show("results");
+    saveHistory(r);
+    saveBoard(r);
+  }
+
+  // ---- local history ----
+  const HKEY = "digit-span-history";
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(HKEY) || "[]"); } catch (e) { return []; }
+  }
+  function saveHistory(r) {
+    const h = loadHistory();
+    h.unshift({ at: Date.now(), forward: r.spans.forward ?? null, backward: r.spans.backward ?? null, pace: cfg.pace, present: cfg.present });
+    try { localStorage.setItem(HKEY, JSON.stringify(h.slice(0, 12))); } catch (e) {}
+    renderHistory();
+  }
+  function renderHistory() {
+    const h = loadHistory();
+    $("historyBlock").hidden = h.length === 0;
+    if (!h.length) return;
+    const how = { show: "Shown", speak: "Spoken", both: "Shown and spoken" };
+    $("historyTable").innerHTML = `<thead><tr><th>When</th><th class="r">Forward</th><th class="r">Backward</th><th>Given</th><th>Pace</th></tr></thead><tbody>` +
+      h.map(x => `<tr><td>${new Date(x.at).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}</td><td class="r">${x.forward ?? "–"}</td><td class="r">${x.backward ?? "–"}</td><td>${how[x.present] || ""}</td><td>${x.pace / 1000} s</td></tr>`).join("") + `</tbody>`;
+  }
+  renderHistory();
+
+  // ---- shared leaderboard ----
+  let db = null, user = null, myId = null, boardRows = [], canWrite = true;
+
+  async function waitForClaude() {
+    for (let i = 0; i < 25; i++) {
+      if (window.claude && typeof window.claude.use === "function") return true;
+      await sleep(200);
+    }
+    return false;
+  }
+
+  (async () => {
+    if (!(await waitForClaude())) return;
+    try { user = await window.claude.use("user"); } catch (e) { user = null; }
+    try { db = await window.claude.use("db"); } catch (e) { db = null; }
+    if (!db) return;
+    if (user) myId = (await user.me()).id;
+    if (user) { const w = await user.can("data.write"); if (w === false) canWrite = false; }
+    $("boardBlock").hidden = false;
+    if (!myId) $("boardNote").textContent = "Everyone's best spans. Sign in to add yours.";
+    else if (!canWrite) $("boardNote").textContent = "Everyone's best spans. You have view-only access, so your results stay on this device.";
+    renderBoard();
+    db.collection("scores").orderBy("total", "desc").limit(100).onSnapshot(
+      snap => { boardRows = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderBoard(); },
+      () => { $("boardNote").textContent = "The leaderboard couldn't load. Reopen the page to try again."; }
+    );
+  })();
+
+  let renderSeq = 0;
+  async function renderBoard() {
+    const mine = ++renderSeq;
+    if (!boardRows.length) {
+      $("boardTable").innerHTML = `<tbody><tr><td class="empty">No scores yet. Finish a test to be first.</td></tr></tbody>`;
+      return;
+    }
+    let profiles = {};
+    if (user) { try { profiles = await user.profiles(boardRows.map(r => r.id)); } catch (e) {} }
+    if (mine !== renderSeq) return;
+    const table = document.createElement("table");
+    table.innerHTML = `<thead><tr><th>Person</th><th class="r">Forward</th><th class="r">Backward</th><th class="r">Tests</th></tr></thead>`;
+    const tb = document.createElement("tbody");
+    boardRows.forEach(r => {
+      const p = profiles[r.id] || {};
+      const tr = document.createElement("tr");
+      const who = document.createElement("td");
+      const wrap = document.createElement("span"); wrap.className = "who";
+      if (p.avatarUrl) { const img = document.createElement("img"); img.src = p.avatarUrl; img.alt = ""; wrap.appendChild(img); }
+      const nm = document.createElement("span"); nm.textContent = p.name || "Someone"; wrap.appendChild(nm);
+      if (r.id === myId) { const y = document.createElement("span"); y.className = "you"; y.textContent = "(you)"; wrap.appendChild(y); }
+      who.appendChild(wrap); tr.appendChild(who);
+      [r.forward || "–", r.backward || "–", r.tests || 1].forEach(v => {
+        const td = document.createElement("td"); td.className = "r"; td.textContent = v; tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+    table.appendChild(tb);
+    $("boardTable").replaceChildren(...table.childNodes);
+  }
+
+  async function saveBoard(r) {
+    if (!db || !myId || !canWrite) return;
+    try {
+      const ref = db.collection("scores").doc(myId);
+      const snap = await ref.get();
+      const prev = snap.exists ? (snap.data() || {}) : {};
+      const forward = Math.max(prev.forward || 0, r.spans.forward || 0);
+      const backward = Math.max(prev.backward || 0, r.spans.backward || 0);
+      const improved = forward > (prev.forward || 0) || backward > (prev.backward || 0);
+      await ref.set({ forward, backward, total: forward + backward, tests: (prev.tests || 0) + 1, updatedAt: Date.now() });
+      $("saveNote").textContent = improved ? "New personal best saved to the leaderboard." : "Added to your leaderboard entry.";
+    } catch (e) {
+      if (e && e.code === "invalid_argument") {
+        canWrite = false;
+        $("saveNote").textContent = "Your access is view-only, so this result stays on this device.";
+      } else {
+        $("saveNote").textContent = "This result couldn't be saved to the leaderboard. It's still in your recent tests below.";
+      }
+    }
+  }
+})();
+</script>
+</body>
+</html>
